@@ -4,19 +4,12 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
+────────────────────────────────────────
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-# ─────────────────────────────────────────
-# CONFIGURACIÓN
-# ─────────────────────────────────────────
-FORMS2_URL = "https://docs.google.com/spreadsheets/d/1mfaVpcYfjy1hFA6bE_AEgIeDijpkVJ5fZIGgLXt41lU/export?format=csv&gid=1538782373"
-
-DB_CONFIG = {
-    "host":     "thomas.proxy.rlwy.net",
-    "port":     19376,
-    "database": "railway",
-    "user":     "postgres",
-    "password": "RnsXfbGotAcFeREpgHwbnrArAVAPDacK"
-}
+from db.conexion import DB_CONFIG
 
 # ─────────────────────────────────────────
 # MAPEO DE COLUMNAS (Google Sheet → código)
