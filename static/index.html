@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <link rel="icon" type="image/jpeg" href="/logo_alef.jpeg">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Seguimiento de Rutas — Tralef</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-logo img {
+      height: 40px;
+      width: 40px;
+      object-fit: contain;
+      border-radius: 4px;
+      background: #fff;
+      padding: 2px;
+    }
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    #ultima-actualizacion {
+      font-size: 0.75rem;
+      color: #8899aa;
+    }
+
+    /* ── Contenedor principal ── */
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    /* ── Estado vacío ── */
+    #sin-rutas {
+      text-align: center;
+      padding: 80px 24px;
+      color: #667;
+    }
+    #sin-rutas p {
+      font-size: 1rem;
+      margin-top: 8px;
+    }
+
+    /* ── Tarjeta de ruta ── */
+    .ruta-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .ruta-header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .ruta-numero {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #4fc3f7;
+    }
+    .ruta-trayecto {
+      font-size: 0.85rem;
+      color: #aac;
+    }
+
+    /* ── Mapa embebido ── */
+    .ruta-mapa {
+      width: 100%;
+      height: 320px;
+      border: none;
+      display: block;
+      background: #e8eaf0;
+    }
+    .ruta-mapa-placeholder {
+      width: 100%;
+      height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #e8eaf0;
+      color: #889;
+      font-size: 0.85rem;
+    }
+
+    /* ── Sección de foto ── */
+    .ruta-foto-section {
+      padding: 16px 20px;
+      border-top: 1px solid #eef;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .foto-display {
+      width: 120px;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #dde;
+      flex-shrink: 0;
+      background: #eef;
+    }
+    .foto-placeholder {
+      width: 120px;
+      height: 90px;
+      border-radius: 8px;
+      border: 1px dashed #ccd;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #aab;
+      font-size: 0.75rem;
+      text-align: center;
+      padding: 8px;
+    }
+    .foto-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      justify-content: center;
+    }
+    .foto-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #889;
+    }
+    .foto-hora {
+      font-size: 0.9rem;
+      color: #334;
+    }
+    .foto-sin-foto {
+      font-size: 0.85rem;
+      color: #aab;
+    }
+    /* ── Visor de foto en pantalla completa ── */
+    #visor {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+    #visor.activo {
+      display: flex;
+    }
+    #visor img {
+      max-width: 95vw;
+      max-height: 95vh;
+      border-radius: 8px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+
+<div id="visor" onclick="cerrarVisor()">
+  <img id="visor-img" src="" alt="Foto del termo"/>
+</div>
+
+<header>
+  <div class="header-logo">
+    <img src="/logo_alef.jpeg" alt="Transportes Alef"/>
+    <h1>Seguimiento de rutas</h1>
+  </div>
+  <span id="ultima-actualizacion">Cargando...</span>
+</header>
+
+<main>
+  <div id="contenedor-rutas"></div>
+  <div id="sin-rutas" style="display:none;">
+    <p>No hay rutas activas por el momento.</p>
+  </div>
+</main>
+
+<script>
+  // ── Obtener token de la URL ──
+  // La URL es del tipo /seguimiento/ABC123
+  // El token es la última parte de la ruta
+  const token = window.location.pathname.split("/").filter(Boolean).pop();
+
+  async function cargarRutas() {
+    try {
+      const res = await fetch(`/api/rutas/${token}`);
+      if (!res.ok) {
+        mostrarSinRutas();
+        return;
+      }
+      const data = await res.json();
+      renderRutas(data.rutas);
+      actualizarHora();
+    } catch (e) {
+      mostrarSinRutas();
+    }
+  }
+
+  function renderRutas(rutas) {
+    const contenedor = document.getElementById("contenedor-rutas");
+    const sinRutas   = document.getElementById("sin-rutas");
+
+    if (!rutas || rutas.length === 0) {
+      contenedor.innerHTML = "";
+      sinRutas.style.display = "block";
+      return;
+    }
+
+    sinRutas.style.display = "none";
+    contenedor.innerHTML = rutas.map(ruta => tarjetaRuta(ruta)).join("");
+  }
+
+  function tarjetaRuta(ruta) {
+    const mapa = ruta.link_sky
+      ? `<iframe class="ruta-mapa" src="${ruta.link_sky}" allowfullscreen></iframe>`
+      : `<div class="ruta-mapa-placeholder">Ubicación no disponible</div>`;
+
+    const esFrio = ruta.temperatura === 'Congelado' || ruta.temperatura === 'Refrigerado';
+
+    const foto = ruta.ultima_foto
+      ? `<img class="foto-display" src="/fotos/${ruta.ultima_foto.file_id}.jpg" alt="Display termo" onclick="abrirVisor(this.src)" style="cursor:zoom-in"/>`
+      : `<div class="foto-placeholder">Sin foto aún</div>`;
+
+    const infoFoto = ruta.ultima_foto
+      ? `<span class="foto-label">Última actualización</span>
+         <span class="foto-hora">${ruta.ultima_foto.fecha_hora}</span>`
+      : `<span class="foto-sin-foto">El operador aún no ha enviado foto del display.</span>`;
+
+    const seccionFoto = esFrio ? `
+      <div class="ruta-foto-section">
+        ${foto}
+        <div class="foto-info">
+          <span class="foto-label">Display del termo</span>
+          ${infoFoto}
+        </div>
+      </div>` : '';
+
+    return `
+      <div class="ruta-card">
+        <div class="ruta-header">
+          <span class="ruta-numero">Ruta ${ruta.numero_ruta}</span>
+          <span class="ruta-trayecto">${ruta.origen} → ${ruta.destino}</span>
+        </div>
+        ${mapa}
+        ${seccionFoto}
+      </div>
+    `;
+  }
+
+  function mostrarSinRutas() {
+    document.getElementById("contenedor-rutas").innerHTML = "";
+    document.getElementById("sin-rutas").style.display = "block";
+    actualizarHora();
+  }
+
+  function actualizarHora() {
+    const ahora = new Date();
+    const hora = ahora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+    document.getElementById("ultima-actualizacion").textContent = `Actualizado a las ${hora}`;
+  }
+
+  function abrirVisor(src) {
+    document.getElementById("visor-img").src = src;
+    document.getElementById("visor").classList.add("activo");
+  }
+
+  function cerrarVisor() {
+    document.getElementById("visor").classList.remove("activo");
+  }
+
+  // Carga inicial y refresco cada 60 segundos
+  cargarRutas();
+  setInterval(cargarRutas, 60000);
+</script>
+
+</body>
+</html>

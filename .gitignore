@@ -1,0 +1,9 @@
+fotos/*
+!fotos/.gitkeep
+__pycache__/
+*.pyc
+.env
+static/*.pdf
+static/*.xml
+static/*.exe
+python
