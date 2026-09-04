@@ -1,14 +1,18 @@
+import os
 import psycopg2
 from psycopg2 import pool
+from dotenv import load_dotenv
 
-# Cambia solo DB_PASSWORD por tu contraseña real
+load_dotenv()  # lee el archivo .env en desarrollo local
+
 DB_CONFIG = {
-    "host":     "thomas.proxy.rlwy.net",
-    "database": "railway",
-    "user":     "postgres",
-    "password": "RnsXfbGotAcFeREpgHwbnrArAVAPDacK",
-    "port":     19376
+    "host":     os.getenv("DB_HOST"),
+    "database": os.getenv("DB_NAME"),
+    "user":     os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "port":     os.getenv("DB_PORT", "5432")
 }
+
 # Pool de conexiones: mínimo 1, máximo 10 simultáneas
 _pool = None
 
